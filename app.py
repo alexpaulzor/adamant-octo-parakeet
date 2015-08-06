@@ -35,7 +35,6 @@ class User:
     if 'last_name' in params:
       self.last_name = params['last_name']
     if 'groups' in params:
-      # TODO: missing group?
       group_objs = set(map(find_or_create_group, params['groups']))
       added_groups = group_objs - self.groups
       removed_groups = self.groups - group_objs
@@ -60,7 +59,7 @@ class Group:
   def __init__(self, name=None):
     self.name = name
     self.users = set()
-  
+
   def add_user(self, user):
     if user not in self.users:
       self.users.add(user)
