@@ -147,7 +147,30 @@ class AppTestCase(unittest.TestCase):
     result = json.loads(rv.data)
     assert len(result['groups']) == 1
 
-  def test_put_user_change_userid(self): pass
+  def test_put_user_change_userid(self):
+    self.app.post('/users', content_type='application/json', data='''{
+      "userid": "u99",
+      "first_name": "fname1",
+      "last_name": "lname1",
+      "groups": []
+    }
+    ''')
+    rv = self.app.put('/users/u99', content_type='application/json', data='''{
+      "userid": "u98",
+      "first_name": "fname2",
+      "last_name": "lname2",
+      "groups": []
+    }
+    ''')
+
+    assert rv.status_code == 409
+
+    rv = self.app.get('/users/u99')
+    assert rv.status_code == 200
+    assert 'lname2' not in rv.data
+    
+    rv = self.app.get('/users/u98')
+    assert rv.status_code == 404
 
   def test_delete_user(self):
     self.app.post('/users', content_type='application/json', data='''{

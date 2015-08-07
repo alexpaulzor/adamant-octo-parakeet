@@ -26,9 +26,6 @@ class User:
     self.update(params)
 
   def update(self, params):
-    if 'userid' in params and self.userid != params['userid']:
-      # TODO: handle changing user id
-      pass
     self.userid = params['userid']
     if 'first_name' in params:
       self.first_name = params['first_name']
@@ -44,9 +41,11 @@ class User:
       for group in added_groups:
         group.add_user(self)
 
+  def to_dict(self):
+    return {'userid': self.userid, 'first_name': self.first_name, 'last_name': self.last_name, 'groups': map(lambda g: g.name, self.groups)}
+
   def to_json(self):
-    return jsonify(userid=self.userid, first_name=self.first_name, last_name=self.last_name,
-      groups=map(lambda g: g.name, self.groups))
+    return json.dumps(self.to_dict())
 
   def destroy(self):
     for group in self.groups.copy():
@@ -73,6 +72,9 @@ class Group:
   def to_json(self):
     return json.dumps(map(lambda u: u.userid, self.users))
 
+  def to_dict(self):
+    return {'name': self.name, 'users': map(lambda u: u.userid, self.users)}
+
   def destroy(self):
     for user in self.users.copy():
       self.remove_user(user)
@@ -88,6 +90,10 @@ class Group:
       self.remove_user(user)
 
 ######################################
+
+@app.route('/users', methods=['GET'])
+def list_users():
+  return json.dumps(map(lambda u: u.to_dict(), users.values()))
 
 @app.route('/users/<userid>', methods=['GET'])
 def get(userid):
@@ -119,9 +125,18 @@ def delete(userid):
 def put(userid):
   if userid not in users:
     return jsonify(error="user %s not found" % userid), 404
+  user_json = request.get_json()
+  if 'userid' in user_json and user_json['userid'] != userid:
+    return jsonify(error="userids cannot be changed"), 409
   user = users[userid]
-  user.update(request.get_json())
+  user.update(user_json)
   return user.to_json()
+
+########## GROUPS
+
+@app.route('/groups', methods=['GET'])
+def list_groups():
+  return json.dumps(map(lambda g: g.to_dict(), groups.values()))
 
 @app.route('/groups/<groupid>', methods=['GET'])
 def get_group(groupid):
